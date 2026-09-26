@@ -1,0 +1,32 @@
+[
+  {
+    "pregunta": "¿Cómo ejecuto una función bloqueante sin congelar el programa?",
+    "documento_id_esperado": "event-loop",
+    "documentos_relevantes": ["event-loop", "errores-comunes"],
+    "nota": "Pregunta en lenguaje natural, sin el nombre de la función. Favorece al recuperador denso: ni 'to_thread' ni 'run_in_executor' aparecen en la consulta."
+  },
+  {
+    "pregunta": "¿Qué pasa si varias tareas de un TaskGroup fallan al mismo tiempo?",
+    "documento_id_esperado": "tasks-y-taskgroup",
+    "documentos_relevantes": ["tasks-y-taskgroup"],
+    "nota": "Mezcla lenguaje natural con un nombre propio exacto (TaskGroup). Caso típico donde el híbrido debería ganar."
+  },
+  {
+    "pregunta": "¿Por qué no hay que tragarse un CancelledError?",
+    "documento_id_esperado": "timeouts-y-cancelacion",
+    "documentos_relevantes": ["timeouts-y-cancelacion"],
+    "nota": "CancelledError es un término raro en el corpus: IDF alto, BM25 lo clava."
+  },
+  {
+    "pregunta": "¿Cómo limito a cinco la cantidad de pedidos simultáneos a una API externa?",
+    "documento_id_esperado": "sincronizacion",
+    "documentos_relevantes": ["sincronizacion"],
+    "nota": "La respuesta es Semaphore, pero la palabra no aparece en la pregunta. Depende del embedding."
+  },
+  {
+    "pregunta": "¿Con qué clase se mockea una corrutina en los tests unitarios?",
+    "documento_id_esperado": "testing-asincrono",
+    "documentos_relevantes": ["testing-asincrono"],
+    "nota": "La respuesta es AsyncMock. 'mockea' y 'tests' son señales léxicas fuertes hacia el documento de testing."
+  }
+]

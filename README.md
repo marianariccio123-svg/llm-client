@@ -4,6 +4,20 @@ Cliente asíncrono unificado para modelos de lenguaje (LLM), con una interfaz
 común para OpenAI, Anthropic y Google Gemini. Proyecto de pre-entrega para
 el curso de AI Engineering.
 
+## Entregas del curso
+
+Este repositorio acumula las pre-entregas. Cada una vive en su propia carpeta,
+con su README, sus dependencias y sus instrucciones de ejecución:
+
+| Entrega | Carpeta | Tema |
+|---|---|---|
+| 1 | raíz del repo | Cliente async unificado para OpenAI, Anthropic y Gemini |
+| 2 | [`pre-entrega-2/`](pre-entrega-2/) | Pipeline de extracción estructurada con LangChain |
+| 3 | [`pre-entrega-3/`](pre-entrega-3/) | RAG local con LangChain + ChromaDB |
+| 4 | [`pre-entrega-4/`](pre-entrega-4/) | RAG escalable en Pinecone + recuperador híbrido + evaluación |
+
+Lo que sigue documenta la **Pre-entrega 1**.
+
 ## ¿Qué hace?
 
 - Permite instanciar un proveedor (OpenAI, Anthropic o Gemini) bajo la misma interfaz.

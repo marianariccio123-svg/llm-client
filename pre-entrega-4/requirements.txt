@@ -1,0 +1,23 @@
+# --- Núcleo LangChain ---
+langchain
+langchain-core
+langchain-text-splitters
+# EnsembleRetriever vive acá desde LangChain 1.x (antes en langchain.retrievers)
+langchain-classic
+# BM25Retriever
+langchain-community
+rank_bm25
+
+# --- Pinecone ---
+# SDK nativo. NO se usa langchain-pinecone: fija numpy<2 y no tiene release
+# compatible con Python 3.14. Ver la nota en rag.py y en el README.
+pinecone
+
+# --- Proveedores de embeddings / chat ---
+langchain-google-genai
+langchain-openai
+
+# --- Utilidades ---
+pydantic
+python-dotenv
+tiktoken
