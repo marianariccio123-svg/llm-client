@@ -1,0 +1,42 @@
+==============================================================================
+Pedido de aclaración: el agente no adivina
+==============================================================================
+
+escenario:       ambiguedad
+thread_id:       demo-ambiguedad
+modelo:          gemini / gemini-flash-lite-latest
+recursion_limit: 10
+ejecutado:       2026-10-05T18:29:51+00:00
+
+Qué demuestra:
+  Hay dos clientes llamados Juan. La herramienta devuelve un error de
+  ambigüedad con los dos candidatos, y el agente pregunta en vez de elegir
+  uno al azar. En el segundo turno el usuario aclara y el agente retoma el
+  hilo.
+
+------------------------------------------------------------------------------
+
+
+Usuario: "¿Cuántos pedidos tiene Juan?"
+  -> El agente decide usar la herramienta: buscar_cliente(nombre='Juan')
+  -> La herramienta devuelve [ERROR]: {"error": "'Juan' es ambiguo: hay 2 clientes que coinciden. Preguntale al usuario a cuál se refiere antes de seguir.", "coincidencias": [{"cliente_id": 103, "nombre": "Juan Pérez", "email": "juan.perez@example.com", "ciudad": "Córdoba"}, {"cliente_id": 104, "nombre": "Juan Perazzo", "email": "juan.perazzo@example.co...
+  -> El agente razona: la herramienta no alcanzó -> le pide una aclaración al usuario.
+
+Respuesta: Encontré dos clientes con ese nombre:
+
+1. **Juan Pérez** (de Córdoba)
+2. **Juan Perazzo** (de La Plata)
+
+¿A cuál de los dos te referís?
+
+Usuario: "El de Córdoba."
+  -> El agente decide usar la herramienta: buscar_pedidos(cliente_id=103)
+  -> La herramienta devuelve: {"cliente_id": 103, "nombre": "Juan Pérez", "cantidad_de_pedidos": 1, "total_gastado": 8200.0, "pedidos": [{"pedido_id": "P-1019", "fecha": "2025-07-11", "total": 8200.0, "estado": "entregado"}]}
+  -> El agente razona: ya tiene los datos -> responde.
+
+Respuesta: Juan Pérez tiene **1** pedido (el pedido `P-1019` del 11/07/2025, por un total de $8.200, que ya fue entregado).
+
+------------------------------------------------------------------------------
+Turnos del modelo (vueltas del ciclo): 4
+Llamadas a herramientas:               2
+Mensajes totales en el estado:         8

@@ -1,0 +1,211 @@
+{
+  "escenario": "memoria",
+  "titulo": "Resiliencia de estado: el agente recuerda el turno anterior",
+  "demuestra": "Dos turnos sobre el mismo thread_id. El segundo ('¿y de ese pedido, hay stock?') no menciona ni al cliente ni al pedido: solo se entiende con el historial, que el agente levanta del checkpointer de SQLite.",
+  "thread_id": "demo-memoria",
+  "proveedor": "gemini",
+  "modelo": "gemini-flash-lite-latest",
+  "recursion_limit": 10,
+  "timestamp": "2026-10-05T18:30:04+00:00",
+  "turnos_del_usuario": [
+    "¿Cuántos pedidos tiene Mariana Riccio y cuánto gastó?",
+    "¿Y de su último pedido, qué productos eran?",
+    "¿Queda stock de alguno de esos dos?"
+  ],
+  "turnos_del_modelo": 7,
+  "llamadas_a_herramientas": 5,
+  "mensajes": [
+    {
+      "tipo": "HumanMessage",
+      "rol": "usuario",
+      "contenido": "¿Cuántos pedidos tiene Mariana Riccio y cuánto gastó?"
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "herramienta": "buscar_cliente",
+          "argumentos": {
+            "nombre": "Mariana Riccio"
+          },
+          "id": "call_129494"
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "rol": "herramienta",
+      "herramienta": "buscar_cliente",
+      "tool_call_id": "call_129494",
+      "resultado": {
+        "cliente_id": 102,
+        "nombre": "Mariana Riccio",
+        "email": "mariana.r@example.com",
+        "ciudad": "Buenos Aires"
+      }
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "herramienta": "buscar_pedidos",
+          "argumentos": {
+            "cliente_id": 102
+          },
+          "id": "call_178345"
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "rol": "herramienta",
+      "herramienta": "buscar_pedidos",
+      "tool_call_id": "call_178345",
+      "resultado": {
+        "cliente_id": 102,
+        "nombre": "Mariana Riccio",
+        "cantidad_de_pedidos": 3,
+        "total_gastado": 14500.0,
+        "pedidos": [
+          {
+            "pedido_id": "P-1027",
+            "fecha": "2025-09-21",
+            "total": 4500.0,
+            "estado": "en camino"
+          },
+          {
+            "pedido_id": "P-1014",
+            "fecha": "2025-06-02",
+            "total": 5800.0,
+            "estado": "entregado"
+          },
+          {
+            "pedido_id": "P-1001",
+            "fecha": "2025-03-14",
+            "total": 4200.0,
+            "estado": "entregado"
+          }
+        ]
+      }
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "Mariana Riccio tiene un total de **3 pedidos** realizados y gastó **$14.500** en total.\n\nLos pedidos son:\n- **P-1027** (2025-09-21): $4.500 (en camino)\n- **P-1014** (2025-06-02): $5.800 (entregado)\n- **P-1001** (2025-03-14): $4.200 (entregado)"
+    },
+    {
+      "tipo": "HumanMessage",
+      "rol": "usuario",
+      "contenido": "¿Y de su último pedido, qué productos eran?"
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "herramienta": "detalle_pedido",
+          "argumentos": {
+            "pedido_id": "P-1027"
+          },
+          "id": "call_84417"
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "rol": "herramienta",
+      "herramienta": "detalle_pedido",
+      "tool_call_id": "call_84417",
+      "resultado": {
+        "pedido_id": "P-1027",
+        "cliente_id": 102,
+        "fecha": "2025-09-21",
+        "total": 4500.0,
+        "estado": "en camino",
+        "items": [
+          {
+            "sku": "TEC-MEC-87",
+            "producto": "Teclado mecánico 87 teclas",
+            "cantidad": 1,
+            "precio_unitario": 3500.0,
+            "subtotal": 3500.0
+          },
+          {
+            "sku": "MOU-ERG-01",
+            "producto": "Mouse ergonómico inalámbrico",
+            "cantidad": 1,
+            "precio_unitario": 1000.0,
+            "subtotal": 1000.0
+          }
+        ]
+      }
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "El último pedido de Mariana (el **P-1027** del 21/09/2025) contiene los siguientes productos:\n\n- **1x Teclado mecánico 87 teclas** (SKU: `TEC-MEC-87`) — $3.500\n- **1x Mouse ergonómico inalámbrico** (SKU: `MOU-ERG-01`) — $1.000\n\nEl total de este pedido es de **$4.500**."
+    },
+    {
+      "tipo": "HumanMessage",
+      "rol": "usuario",
+      "contenido": "¿Queda stock de alguno de esos dos?"
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "herramienta": "consultar_stock",
+          "argumentos": {
+            "sku": "TEC-MEC-87"
+          },
+          "id": "call_139902"
+        },
+        {
+          "herramienta": "consultar_stock",
+          "argumentos": {
+            "sku": "MOU-ERG-01"
+          },
+          "id": "call_139903"
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "rol": "herramienta",
+      "herramienta": "consultar_stock",
+      "tool_call_id": "call_139902",
+      "resultado": {
+        "sku": "TEC-MEC-87",
+        "producto": "Teclado mecánico 87 teclas",
+        "precio": 3500.0,
+        "stock": 12,
+        "disponible": true
+      }
+    },
+    {
+      "tipo": "ToolMessage",
+      "rol": "herramienta",
+      "herramienta": "consultar_stock",
+      "tool_call_id": "call_139903",
+      "resultado": {
+        "sku": "MOU-ERG-01",
+        "producto": "Mouse ergonómico inalámbrico",
+        "precio": 1000.0,
+        "stock": 0,
+        "disponible": false
+      }
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "Así quedó el stock de los dos productos:\n\n- **Teclado mecánico 87 teclas** (`TEC-MEC-87`): Sí, quedan **12 unidades** en stock.\n- **Mouse ergonómico inalámbrico** (`MOU-ERG-01`): No hay stock (**0 unidades** disponibles)."
+    }
+  ]
+}

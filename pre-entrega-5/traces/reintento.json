@@ -1,0 +1,103 @@
+{
+  "escenario": "reintento",
+  "titulo": "Ciclo de retorno: la herramienta falla y el agente se corrige",
+  "demuestra": "El usuario da un SKU que no existe. `consultar_stock` devuelve un error que incluye el catálogo válido, y el agente reintenta solo con el código correcto en vez de rendirse. Es el ciclo de retorno en su forma más pura: el error es información, no un cierre.",
+  "thread_id": "demo-reintento",
+  "proveedor": "gemini",
+  "modelo": "gemini-flash-lite-latest",
+  "recursion_limit": 10,
+  "timestamp": "2026-10-05T18:29:36+00:00",
+  "turnos_del_usuario": [
+    "¿Cuánto stock queda del teclado? El código creo que es TECLADO-87."
+  ],
+  "turnos_del_modelo": 3,
+  "llamadas_a_herramientas": 2,
+  "mensajes": [
+    {
+      "tipo": "HumanMessage",
+      "rol": "usuario",
+      "contenido": "¿Cuánto stock queda del teclado? El código creo que es TECLADO-87."
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "herramienta": "consultar_stock",
+          "argumentos": {
+            "sku": "TECLADO-87"
+          },
+          "id": "call_70277"
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "rol": "herramienta",
+      "herramienta": "consultar_stock",
+      "tool_call_id": "call_70277",
+      "resultado": {
+        "error": "No existe el SKU 'TECLADO-87'.",
+        "skus_validos": [
+          {
+            "sku": "CAB-HDMI-2",
+            "nombre": "Cable HDMI 2.1 de 2 metros"
+          },
+          {
+            "sku": "HUB-USBC-7",
+            "nombre": "Hub USB-C de 7 puertos"
+          },
+          {
+            "sku": "MON-27-4K",
+            "nombre": "Monitor 27 pulgadas 4K"
+          },
+          {
+            "sku": "MOU-ERG-01",
+            "nombre": "Mouse ergonómico inalámbrico"
+          },
+          {
+            "sku": "SIL-ERG-02",
+            "nombre": "Silla ergonómica"
+          },
+          {
+            "sku": "TEC-MEC-87",
+            "nombre": "Teclado mecánico 87 teclas"
+          }
+        ]
+      }
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "herramienta": "consultar_stock",
+          "argumentos": {
+            "sku": "TEC-MEC-87"
+          },
+          "id": "call_130246"
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "rol": "herramienta",
+      "herramienta": "consultar_stock",
+      "tool_call_id": "call_130246",
+      "resultado": {
+        "sku": "TEC-MEC-87",
+        "producto": "Teclado mecánico 87 teclas",
+        "precio": 3500.0,
+        "stock": 12,
+        "disponible": true
+      }
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "Quedan **12 unidades** en stock del **Teclado mecánico 87 teclas** (código `TEC-MEC-87`), con un precio de $3.500 cada una."
+    }
+  ]
+}

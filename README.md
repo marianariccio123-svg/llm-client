@@ -15,6 +15,7 @@ con su README, sus dependencias y sus instrucciones de ejecución:
 | 2 | [`pre-entrega-2/`](pre-entrega-2/) | Pipeline de extracción estructurada con LangChain |
 | 3 | [`pre-entrega-3/`](pre-entrega-3/) | RAG local con LangChain + ChromaDB |
 | 4 | [`pre-entrega-4/`](pre-entrega-4/) | RAG escalable en Pinecone + recuperador híbrido + evaluación |
+| 5 | [`pre-entrega-5/`](pre-entrega-5/) | Agente ReAct con LangGraph, herramientas y memoria persistente |
 
 Lo que sigue documenta la **Pre-entrega 1**.
 

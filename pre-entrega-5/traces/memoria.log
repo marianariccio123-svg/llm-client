@@ -1,0 +1,60 @@
+==============================================================================
+Resiliencia de estado: el agente recuerda el turno anterior
+==============================================================================
+
+escenario:       memoria
+thread_id:       demo-memoria
+modelo:          gemini / gemini-flash-lite-latest
+recursion_limit: 10
+ejecutado:       2026-10-05T18:30:04+00:00
+
+Qué demuestra:
+  Dos turnos sobre el mismo thread_id. El segundo ('¿y de ese pedido, hay
+  stock?') no menciona ni al cliente ni al pedido: solo se entiende con el
+  historial, que el agente levanta del checkpointer de SQLite.
+
+------------------------------------------------------------------------------
+
+
+Usuario: "¿Cuántos pedidos tiene Mariana Riccio y cuánto gastó?"
+  -> El agente decide usar la herramienta: buscar_cliente(nombre='Mariana Riccio')
+  -> La herramienta devuelve: {"cliente_id": 102, "nombre": "Mariana Riccio", "email": "mariana.r@example.com", "ciudad": "Buenos Aires"}
+  -> El agente decide usar la herramienta: buscar_pedidos(cliente_id=102)
+  -> La herramienta devuelve: {"cliente_id": 102, "nombre": "Mariana Riccio", "cantidad_de_pedidos": 3, "total_gastado": 14500.0, "pedidos": [{"pedido_id": "P-1027", "fecha": "2025-09-21", "total": 4500.0, "estado": "en camino"}, {"pedido_id": "P-1014", "fecha": "2025-06-02", "total": 5800.0, "estado": "entregado"}, {"pedido_id": "P-1001", "fech...
+  -> El agente razona: ya tiene los datos -> responde.
+
+Respuesta: Mariana Riccio tiene un total de **3 pedidos** realizados y gastó **$14.500** en total.
+
+Los pedidos son:
+- **P-1027** (2025-09-21): $4.500 (en camino)
+- **P-1014** (2025-06-02): $5.800 (entregado)
+- **P-1001** (2025-03-14): $4.200 (entregado)
+
+Usuario: "¿Y de su último pedido, qué productos eran?"
+  -> El agente decide usar la herramienta: detalle_pedido(pedido_id='P-1027')
+  -> La herramienta devuelve: {"pedido_id": "P-1027", "cliente_id": 102, "fecha": "2025-09-21", "total": 4500.0, "estado": "en camino", "items": [{"sku": "TEC-MEC-87", "producto": "Teclado mecánico 87 teclas", "cantidad": 1, "precio_unitario": 3500.0, "subtotal": 3500.0}, {"sku": "MOU-ERG-01", "producto": "Mouse ergonómico inalámbrico", "cantida...
+  -> El agente razona: ya tiene los datos -> responde.
+
+Respuesta: El último pedido de Mariana (el **P-1027** del 21/09/2025) contiene los siguientes productos:
+
+- **1x Teclado mecánico 87 teclas** (SKU: `TEC-MEC-87`) — $3.500
+- **1x Mouse ergonómico inalámbrico** (SKU: `MOU-ERG-01`) — $1.000
+
+El total de este pedido es de **$4.500**.
+
+Usuario: "¿Queda stock de alguno de esos dos?"
+  -> El agente decide usar la herramienta: consultar_stock(sku='TEC-MEC-87')
+  -> El agente decide usar la herramienta: consultar_stock(sku='MOU-ERG-01')
+  -> La herramienta devuelve: {"sku": "TEC-MEC-87", "producto": "Teclado mecánico 87 teclas", "precio": 3500.0, "stock": 12, "disponible": true}
+  -> La herramienta devuelve: {"sku": "MOU-ERG-01", "producto": "Mouse ergonómico inalámbrico", "precio": 1000.0, "stock": 0, "disponible": false}
+  -> El agente razona: ya tiene los datos -> responde.
+
+Respuesta: Así quedó el stock de los dos productos:
+
+- **Teclado mecánico 87 teclas** (`TEC-MEC-87`): Sí, quedan **12 unidades** en stock.
+- **Mouse ergonómico inalámbrico** (`MOU-ERG-01`): No hay stock (**0 unidades** disponibles).
+
+------------------------------------------------------------------------------
+Turnos del modelo (vueltas del ciclo): 7
+Llamadas a herramientas:               5
+Mensajes totales en el estado:         15

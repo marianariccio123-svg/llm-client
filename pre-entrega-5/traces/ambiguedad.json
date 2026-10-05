@@ -1,0 +1,109 @@
+{
+  "escenario": "ambiguedad",
+  "titulo": "Pedido de aclaración: el agente no adivina",
+  "demuestra": "Hay dos clientes llamados Juan. La herramienta devuelve un error de ambigüedad con los dos candidatos, y el agente pregunta en vez de elegir uno al azar. En el segundo turno el usuario aclara y el agente retoma el hilo.",
+  "thread_id": "demo-ambiguedad",
+  "proveedor": "gemini",
+  "modelo": "gemini-flash-lite-latest",
+  "recursion_limit": 10,
+  "timestamp": "2026-10-05T18:29:51+00:00",
+  "turnos_del_usuario": [
+    "¿Cuántos pedidos tiene Juan?",
+    "El de Córdoba."
+  ],
+  "turnos_del_modelo": 4,
+  "llamadas_a_herramientas": 2,
+  "mensajes": [
+    {
+      "tipo": "HumanMessage",
+      "rol": "usuario",
+      "contenido": "¿Cuántos pedidos tiene Juan?"
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "herramienta": "buscar_cliente",
+          "argumentos": {
+            "nombre": "Juan"
+          },
+          "id": "call_92863"
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "rol": "herramienta",
+      "herramienta": "buscar_cliente",
+      "tool_call_id": "call_92863",
+      "resultado": {
+        "error": "'Juan' es ambiguo: hay 2 clientes que coinciden. Preguntale al usuario a cuál se refiere antes de seguir.",
+        "coincidencias": [
+          {
+            "cliente_id": 103,
+            "nombre": "Juan Pérez",
+            "email": "juan.perez@example.com",
+            "ciudad": "Córdoba"
+          },
+          {
+            "cliente_id": 104,
+            "nombre": "Juan Perazzo",
+            "email": "juan.perazzo@example.com",
+            "ciudad": "La Plata"
+          }
+        ]
+      }
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "Encontré dos clientes con ese nombre:\n\n1. **Juan Pérez** (de Córdoba)\n2. **Juan Perazzo** (de La Plata)\n\n¿A cuál de los dos te referís?"
+    },
+    {
+      "tipo": "HumanMessage",
+      "rol": "usuario",
+      "contenido": "El de Córdoba."
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "herramienta": "buscar_pedidos",
+          "argumentos": {
+            "cliente_id": 103
+          },
+          "id": "call_129301"
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "rol": "herramienta",
+      "herramienta": "buscar_pedidos",
+      "tool_call_id": "call_129301",
+      "resultado": {
+        "cliente_id": 103,
+        "nombre": "Juan Pérez",
+        "cantidad_de_pedidos": 1,
+        "total_gastado": 8200.0,
+        "pedidos": [
+          {
+            "pedido_id": "P-1019",
+            "fecha": "2025-07-11",
+            "total": 8200.0,
+            "estado": "entregado"
+          }
+        ]
+      }
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "Juan Pérez tiene **1** pedido (el pedido `P-1019` del 11/07/2025, por un total de $8.200, que ya fue entregado)."
+    }
+  ]
+}

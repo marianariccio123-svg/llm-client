@@ -1,0 +1,15 @@
+# --- LangGraph: el grafo y la persistencia ---
+langgraph
+langgraph-checkpoint-sqlite   # trae SqliteSaver y AsyncSqliteSaver
+aiosqlite                     # driver async, lo usan el saver y las herramientas
+
+# --- LangChain: el decorador @tool y los tipos de mensaje ---
+langchain-core
+
+# --- Proveedores de LLM ---
+langchain-google-genai
+langchain-openai
+langchain-anthropic
+
+# --- Utilidades ---
+python-dotenv

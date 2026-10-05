@@ -1,0 +1,142 @@
+{
+  "escenario": "multipaso",
+  "titulo": "Razonamiento multi-paso: tres herramientas encadenadas",
+  "demuestra": "El agente parte de un nombre y necesita llegar al detalle de un pedido. Ninguna herramienta sola lo resuelve: tiene que encadenar buscar_cliente -> buscar_pedidos -> detalle_pedido. La secuencia no está programada en ningún lado; la arma el modelo leyendo los docstrings.",
+  "thread_id": "demo-multipaso",
+  "proveedor": "gemini",
+  "modelo": "gemini-flash-lite-latest",
+  "recursion_limit": 10,
+  "timestamp": "2026-10-05T18:30:33+00:00",
+  "turnos_del_usuario": [
+    "¿Cuánto gastó en total Mariana Riccio y qué productos tenía su último pedido?"
+  ],
+  "turnos_del_modelo": 4,
+  "llamadas_a_herramientas": 3,
+  "mensajes": [
+    {
+      "tipo": "HumanMessage",
+      "rol": "usuario",
+      "contenido": "¿Cuánto gastó en total Mariana Riccio y qué productos tenía su último pedido?"
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "herramienta": "buscar_cliente",
+          "argumentos": {
+            "nombre": "Mariana Riccio"
+          },
+          "id": "call_280283"
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "rol": "herramienta",
+      "herramienta": "buscar_cliente",
+      "tool_call_id": "call_280283",
+      "resultado": {
+        "cliente_id": 102,
+        "nombre": "Mariana Riccio",
+        "email": "mariana.r@example.com",
+        "ciudad": "Buenos Aires"
+      }
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "herramienta": "buscar_pedidos",
+          "argumentos": {
+            "cliente_id": 102
+          },
+          "id": "call_123307"
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "rol": "herramienta",
+      "herramienta": "buscar_pedidos",
+      "tool_call_id": "call_123307",
+      "resultado": {
+        "cliente_id": 102,
+        "nombre": "Mariana Riccio",
+        "cantidad_de_pedidos": 3,
+        "total_gastado": 14500.0,
+        "pedidos": [
+          {
+            "pedido_id": "P-1027",
+            "fecha": "2025-09-21",
+            "total": 4500.0,
+            "estado": "en camino"
+          },
+          {
+            "pedido_id": "P-1014",
+            "fecha": "2025-06-02",
+            "total": 5800.0,
+            "estado": "entregado"
+          },
+          {
+            "pedido_id": "P-1001",
+            "fecha": "2025-03-14",
+            "total": 4200.0,
+            "estado": "entregado"
+          }
+        ]
+      }
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "herramienta": "detalle_pedido",
+          "argumentos": {
+            "pedido_id": "P-1027"
+          },
+          "id": "call_122914"
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "rol": "herramienta",
+      "herramienta": "detalle_pedido",
+      "tool_call_id": "call_122914",
+      "resultado": {
+        "pedido_id": "P-1027",
+        "cliente_id": 102,
+        "fecha": "2025-09-21",
+        "total": 4500.0,
+        "estado": "en camino",
+        "items": [
+          {
+            "sku": "TEC-MEC-87",
+            "producto": "Teclado mecánico 87 teclas",
+            "cantidad": 1,
+            "precio_unitario": 3500.0,
+            "subtotal": 3500.0
+          },
+          {
+            "sku": "MOU-ERG-01",
+            "producto": "Mouse ergonómico inalámbrico",
+            "cantidad": 1,
+            "precio_unitario": 1000.0,
+            "subtotal": 1000.0
+          }
+        ]
+      }
+    },
+    {
+      "tipo": "AIMessage",
+      "rol": "agente",
+      "contenido": "Mariana Riccio gastó un total de **$14.500** en sus 3 pedidos.\n\nSu último pedido (el `P-1027` del 2025-09-21, que se encuentra **en camino**) contenía los siguientes productos:\n* **1** unidad de *Teclado mecánico 87 teclas* ($3.500 c/u)\n* **1** unidad de *Mouse ergonómico inalámbrico* ($1.000 c/u)"
+    }
+  ]
+}

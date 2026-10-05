@@ -1,0 +1,32 @@
+==============================================================================
+Ciclo de retorno: la herramienta falla y el agente se corrige
+==============================================================================
+
+escenario:       reintento
+thread_id:       demo-reintento
+modelo:          gemini / gemini-flash-lite-latest
+recursion_limit: 10
+ejecutado:       2026-10-05T18:29:36+00:00
+
+Qué demuestra:
+  El usuario da un SKU que no existe. `consultar_stock` devuelve un error
+  que incluye el catálogo válido, y el agente reintenta solo con el código
+  correcto en vez de rendirse. Es el ciclo de retorno en su forma más pura:
+  el error es información, no un cierre.
+
+------------------------------------------------------------------------------
+
+
+Usuario: "¿Cuánto stock queda del teclado? El código creo que es TECLADO-87."
+  -> El agente decide usar la herramienta: consultar_stock(sku='TECLADO-87')
+  -> La herramienta devuelve [ERROR]: {"error": "No existe el SKU 'TECLADO-87'.", "skus_validos": [{"sku": "CAB-HDMI-2", "nombre": "Cable HDMI 2.1 de 2 metros"}, {"sku": "HUB-USBC-7", "nombre": "Hub USB-C de 7 puertos"}, {"sku": "MON-27-4K", "nombre": "Monitor 27 pulgadas 4K"}, {"sku": "MOU-ERG-01", "nombre": "Mouse ergonómico inalámbrico"}, {"sku": "SI...
+  -> El agente decide usar la herramienta: consultar_stock(sku='TEC-MEC-87')
+  -> La herramienta devuelve: {"sku": "TEC-MEC-87", "producto": "Teclado mecánico 87 teclas", "precio": 3500.0, "stock": 12, "disponible": true}
+  -> El agente razona: ya tiene los datos -> responde.
+
+Respuesta: Quedan **12 unidades** en stock del **Teclado mecánico 87 teclas** (código `TEC-MEC-87`), con un precio de $3.500 cada una.
+
+------------------------------------------------------------------------------
+Turnos del modelo (vueltas del ciclo): 3
+Llamadas a herramientas:               2
+Mensajes totales en el estado:         6
