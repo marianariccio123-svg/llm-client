@@ -1,0 +1,411 @@
+{
+  "solicitud": "Nuestros servicios asíncronos se vienen cayendo seguido. ¿Qué dice nuestra documentación técnica sobre las causas más probables, y qué muestran nuestros propios incidentes del último año? Quiero saber cuál es la causa dominante y si hay algún caso fuera de lo normal.",
+  "proveedor": "gemini",
+  "modelo": "gemini-flash-lite-latest",
+  "max_pasos_supervisor": 6,
+  "recursion_limit": 25,
+  "timestamp": "2026-10-08T19:48:32+00:00",
+  "pasos_del_supervisor": 3,
+  "validacion_aprobada": true,
+  "motivo_validacion": "Las cuatro condiciones de la rúbrica se cumplen.",
+  "rubrica_final": {
+    "hay_evidencia_documental": true,
+    "hay_datos_cuantitativos": true,
+    "hay_analisis_estadistico": true,
+    "hay_validacion_de_datos": true
+  },
+  "delegacion": [
+    {
+      "orden": 1,
+      "agente": "investigador",
+      "herramienta": "buscar_en_documentacion",
+      "resumen": "4 fragmentos de documentación (vía pinecone) sobre: El event loop de asyncio, Errores comunes en asyncio, Timeouts y cancelación",
+      "momento": "2026-10-08T19:47:44+00:00",
+      "datos": {
+        "fuente_de_busqueda": "pinecone",
+        "consulta": "causas de caídas en servicios asíncronos event loop bloqueos timeouts cancelación tareas",
+        "fragmentos": [
+          {
+            "titulo": "Errores comunes en asyncio",
+            "fuente": "07-errores-comunes.md",
+            "pagina": 1,
+            "texto": "## \"coroutine was never awaited\"\n\n`RuntimeWarning: coroutine 'x' was never awaited` significa que se llamó a una\nfunción `async` y se descartó el objeto devuelto sin esperarlo. El cuerpo de la\ncorrutina nunca se ejecutó.\n\n```python\nguardar(datos)          # mal: no hace nada\nawait guardar(datos)    # bien\n```\n\nComo es un *warning* y no un error, el programa sigue andando y el bug pasa\ndesapercibido. Conviene correr los tests con `-W error::RuntimeWarning`.\n\n## Bloquear el event loop\n\nLa causa número uno de que un programa async ande lento. Cualquier llamada\nsincrónica pesada dentro de una corrutina congela todas las demás tareas:\n\n- `time.sleep()` en lugar de `await asyncio.sleep()`\n- `requests.get()` en lugar de un cliente asíncrono como `httpx.AsyncClient`\n- lectura de archivos grandes con `open()`\n- serialización de un JSON enorme, hashing, compresión\n\nLa solución es usar la variante asíncrona de la librería, o delegar la llamada\ncon `await asyncio.to_thread(func, *args)`.\n\n## Tareas fire-and-forget que desaparecen\n\nEl event loop guarda solo una **referencia débil** a las tareas. Si no se\nconserva el objeto devuelto por `create_task()`, el recolector de basura puede\ndestruirla a mitad de camino y la tarea se cancela silenciosamente.\n\n```python\ntareas: set[asyncio.Task] = set()\n\ndef lanzar(coro) -> None:\n    t = asyncio.create_task(coro)\n    tareas.add(t)\n    t.add_done_callback(tareas.discard)\n```\n\nLa alternativa mejor es no hacer fire-and-forget: usar un `TaskGroup`.\n\n## Excepciones que nunca se ven\n\nSi una tarea falla y nadie hace `await` sobre ella ni llama a `.result()`, la\nexcepción queda guardada en el objeto `Task` y solo aparece como\n`Task exception was never retrieved` cuando el recolector la destruye — a veces\nmucho después, a veces nunca.",
+            "score": 0.7514
+          },
+          {
+            "titulo": "Timeouts y cancelación",
+            "fuente": "03-timeouts-y-cancelacion.md",
+            "pagina": 1,
+            "texto": "## asyncio.timeout\n\n`asyncio.timeout(delay)` (Python 3.11+) es un context manager que cancela todo\nlo que esté adentro si se pasa del tiempo. Es la forma preferida porque abarca\nun bloque entero, no una sola llamada.\n\n```python\ntry:\n    async with asyncio.timeout(5):\n        datos = await pedir(url)\n        await guardar(datos)\nexcept TimeoutError:\n    print(\"el bloque tardó más de 5 segundos\")\n```\n\nTambién existe `asyncio.timeout_at(when)` para un instante absoluto del reloj\ndel loop, y el timeout se puede reprogramar en caliente con\n`cm.reschedule(nuevo_deadline)`.\n\n## asyncio.wait_for\n\n`asyncio.wait_for(aw, timeout)` es la versión clásica, para un único awaitable.\nAl vencer el plazo cancela la tarea interna, espera a que la cancelación termine\ny recién ahí lanza `TimeoutError`.\n\nDesde Python 3.11 `asyncio.TimeoutError` es un alias de `TimeoutError`, el\nbuiltin. En código nuevo se atrapa el builtin.\n\n## CancelledError no es un error común\n\nLa cancelación se implementa lanzando `asyncio.CancelledError` dentro de la\ntarea. Desde Python 3.8 hereda de `BaseException`, no de `Exception`, justamente\npara que un `except Exception` genérico no se la coma sin querer.\n\nLa regla es: se puede atrapar para limpiar, pero **hay que volver a lanzarla**.\n\n```python\ntry:\n    await trabajo_largo()\nexcept asyncio.CancelledError:\n    await limpiar()\n    raise          # imprescindible: nunca te tragues la cancelación\n```\n\nTragarse un `CancelledError` deja la tarea en un estado inconsistente y puede\ncolgar el `TaskGroup` o el `asyncio.run()` que la esperaba.",
+            "score": 0.7198
+          },
+          {
+            "titulo": "El event loop de asyncio",
+            "fuente": "01-event-loop.md",
+            "pagina": 1,
+            "texto": "## Qué es el event loop\n\nEl event loop es el núcleo de `asyncio`: un bucle de un solo hilo que mantiene\nuna cola de tareas listas para ejecutarse y las va corriendo de a una. Cuando\nuna corrutina llega a un `await` sobre una operación de E/S, devuelve el control\nal loop, que aprovecha ese hueco para avanzar otra tarea. No hay paralelismo\nreal de CPU: hay *entrelazado* de esperas.\n\nPor eso `asyncio` brilla en trabajo limitado por E/S (llamadas HTTP, consultas a\nbase de datos, lectura de sockets) y no aporta nada en trabajo limitado por CPU.\n\n## Arrancar el loop con asyncio.run\n\n`asyncio.run(coro)` es la única forma recomendada de arrancar un programa\nasíncrono desde código síncrono. Crea un event loop nuevo, ejecuta la corrutina\nhasta el final, cancela las tareas pendientes, cierra los generadores\nasíncronos y finalmente cierra el loop.\n\n```python\nimport asyncio\n\nasync def main() -> None:\n    print(\"hola\")\n\nasyncio.run(main())\n```\n\nLlamar a `asyncio.run()` cuando ya hay un loop corriendo lanza\n`RuntimeError: asyncio.run() cannot be called from a running event loop`. Dentro\nde código que ya es asíncrono se usa `await` directamente.\n\n## get_running_loop y get_event_loop\n\n`asyncio.get_running_loop()` devuelve el loop activo y falla con `RuntimeError`\nsi no hay ninguno. Es la función correcta desde código asíncrono.\n\n`asyncio.get_event_loop()` está obsoleta fuera de un loop en ejecución: en\nversiones modernas emite `DeprecationWarning` y en el futuro va a lanzar error.\nNo la uses en código nuevo.",
+            "score": 0.714
+          },
+          {
+            "titulo": "Timeouts y cancelación",
+            "fuente": "03-timeouts-y-cancelacion.md",
+            "pagina": 4,
+            "texto": "## shield: proteger una sección crítica\n\n`asyncio.shield(aw)` evita que la cancelación externa llegue al awaitable\nenvuelto. Sirve para operaciones que no se pueden dejar a medias, como confirmar\nuna transacción o cerrar un archivo.\n\n```python\nawait asyncio.shield(confirmar_pago(id_pago))\n```\n\nOjo: el `shield` protege la operación interna, pero el `await` de afuera sí\nrecibe la cancelación. La operación protegida sigue corriendo en segundo plano.\n\n## Limpieza con finally\n\nPara código que debe correr sí o sí (cerrar conexiones, liberar locks) se usa\n`try/finally`, que se ejecuta también cuando la tarea es cancelada. Si la\nlimpieza es asíncrona y puede tardar, conviene envolverla en su propio\n`asyncio.shield` o `asyncio.timeout`.",
+            "score": 0.7117
+          }
+        ]
+      }
+    },
+    {
+      "orden": 2,
+      "agente": "investigador",
+      "herramienta": "listar_incidentes",
+      "resumen": "20 incidentes entre 2025-10-06 y 2026-10-06, en 5 categorías",
+      "momento": "2026-10-08T19:47:44+00:00",
+      "datos": {
+        "periodo": {
+          "desde": "2025-10-06",
+          "hasta": "2026-10-06"
+        },
+        "filtro_categoria": null,
+        "cantidad": 20,
+        "categorias_presentes": [
+          "bloqueo-event-loop",
+          "cancelacion-mal-manejada",
+          "fuga-de-tareas",
+          "tarea-huerfana",
+          "timeout-no-configurado"
+        ],
+        "incidentes": [
+          {
+            "incidente_id": "INC-0188",
+            "fecha": "2026-03-04",
+            "servicio": "api-pedidos",
+            "categoria": "bloqueo-event-loop",
+            "severidad": "alta",
+            "minutos_caidos": 45,
+            "descripcion": "Latencia de 12s en todos los endpoints; requests.get sincrónico en el handler de checkout."
+          },
+          {
+            "incidente_id": "INC-0191",
+            "fecha": "2026-03-18",
+            "servicio": "worker-emails",
+            "categoria": "tarea-huerfana",
+            "severidad": "media",
+            "minutos_caidos": 20,
+            "descripcion": "Lote de 300 mails nunca se envió; la task creada con create_task se recolectó."
+          },
+          {
+            "incidente_id": "INC-0195",
+            "fecha": "2026-04-02",
+            "servicio": "api-pedidos",
+            "categoria": "bloqueo-event-loop",
+            "severidad": "critica",
+            "minutos_caidos": 95,
+            "descripcion": "Caída total durante el pico de ventas; generación de PDF sincrónica en el event loop."
+          },
+          {
+            "incidente_id": "INC-0198",
+            "fecha": "2026-04-11",
+            "servicio": "api-stock",
+            "categoria": "timeout-no-configurado",
+            "severidad": "alta",
+            "minutos_caidos": 60,
+            "descripcion": "Conexiones colgadas contra el proveedor externo, sin timeout definido."
+          },
+          {
+            "incidente_id": "INC-0201",
+            "fecha": "2026-04-23",
+            "servicio": "worker-reportes",
+            "categoria": "bloqueo-event-loop",
+            "severidad": "media",
+            "minutos_caidos": 30,
+            "descripcion": "Reporte mensual congeló el worker; pandas corriendo dentro de una corrutina."
+          },
+          {
+            "incidente_id": "INC-0203",
+            "fecha": "2026-05-07",
+            "servicio": "api-pedidos",
+            "categoria": "cancelacion-mal-manejada",
+            "severidad": "alta",
+            "minutos_caidos": 50,
+            "descripcion": "Pagos en estado inconsistente: un except Exception se tragó el CancelledError."
+          },
+          {
+            "incidente_id": "INC-0206",
+            "fecha": "2026-05-15",
+            "servicio": "api-stock",
+            "categoria": "bloqueo-event-loop",
+            "severidad": "media",
+            "minutos_caidos": 25,
+            "descripcion": "Picos de latencia por hashing de contraseñas en el handler de login."
+          },
+          {
+            "incidente_id": "INC-0209",
+            "fecha": "2026-05-29",
+            "servicio": "worker-emails",
+            "categoria": "timeout-no-configurado",
+            "severidad": "baja",
+            "minutos_caidos": 15,
+            "descripcion": "Reintentos infinitos contra el SMTP sin wait_for."
+          },
+          {
+            "incidente_id": "INC-0212",
+            "fecha": "2026-06-08",
+            "servicio": "api-pedidos",
+            "categoria": "bloqueo-event-loop",
+            "severidad": "alta",
+            "minutos_caidos": 55,
+            "descripcion": "Degradación general; lectura sincrónica de un CSV de 400MB en el arranque del request."
+          },
+          {
+            "incidente_id": "INC-0214",
+            "fecha": "2026-06-19",
+            "servicio": "api-pagos",
+            "categoria": "cancelacion-mal-manejada",
+            "severidad": "critica",
+            "minutos_caidos": 480,
+            "descripcion": "Ocho horas sin conciliar pagos: cancelación silenciada dejó transacciones a medio commitear."
+          },
+          {
+            "incidente_id": "INC-0217",
+            "fecha": "2026-07-03",
+            "servicio": "api-stock",
+            "categoria": "fuga-de-tareas",
+            "severidad": "media",
+            "minutos_caidos": 35,
+            "descripcion": "Memoria del proceso creciendo sin techo; tasks que nunca terminaban."
+          },
+          {
+            "incidente_id": "INC-0219",
+            "fecha": "2026-07-14",
+            "servicio": "worker-reportes",
+            "categoria": "bloqueo-event-loop",
+            "severidad": "media",
+            "minutos_caidos": 40,
+            "descripcion": "Worker trabado 40 minutos comprimiendo un ZIP dentro del loop."
+          },
+          {
+            "incidente_id": "INC-0222",
+            "fecha": "2026-07-28",
+            "servicio": "api-pedidos",
+            "categoria": "timeout-no-configurado",
+            "severidad": "alta",
+            "minutos_caidos": 65,
+            "descripcion": "Cascada de timeouts aguas abajo por no acotar la llamada al servicio de envíos."
+          },
+          {
+            "incidente_id": "INC-0225",
+            "fecha": "2026-08-06",
+            "servicio": "api-pagos",
+            "categoria": "bloqueo-event-loop",
+            "severidad": "critica",
+            "minutos_caidos": 85,
+            "descripcion": "Checkout caído; validación de tarjeta usando una librería sincrónica."
+          },
+          {
+            "incidente_id": "INC-0228",
+            "fecha": "2026-08-20",
+            "servicio": "worker-emails",
+            "categoria": "tarea-huerfana",
+            "severidad": "baja",
+            "minutos_caidos": 10,
+            "descripcion": "Notificaciones push perdidas, sin referencia fuerte a las tasks."
+          },
+          {
+            "incidente_id": "INC-0231",
+            "fecha": "2026-09-02",
+            "servicio": "api-stock",
+            "categoria": "fuga-de-tareas",
+            "severidad": "media",
+            "minutos_caidos": -5,
+            "descripcion": "Registro mal cargado por el script de importación; los minutos quedaron en negativo."
+          },
+          {
+            "incidente_id": "INC-0234",
+            "fecha": "2026-09-11",
+            "servicio": "api-pedidos",
+            "categoria": "bloqueo-event-loop",
+            "severidad": "alta",
+            "minutos_caidos": 50,
+            "descripcion": "Timeouts del cliente móvil; serialización de un JSON gigante bloqueando el loop."
+          },
+          {
+            "incidente_id": "INC-0237",
+            "fecha": "2026-09-23",
+            "servicio": "api-pagos",
+            "categoria": "cancelacion-mal-manejada",
+            "severidad": "media",
+            "minutos_caidos": 30,
+            "descripcion": "Reembolsos duplicados tras un deploy; limpieza sin shield en el finally."
+          },
+          {
+            "incidente_id": "INC-0240",
+            "fecha": "2026-10-01",
+            "servicio": "api-stock",
+            "categoria": "bloqueo-event-loop",
+            "severidad": "media",
+            "minutos_caidos": 28,
+            "descripcion": "Latencia intermitente por time.sleep en un retry hecho a mano."
+          },
+          {
+            "incidente_id": "INC-0243",
+            "fecha": "2026-10-06",
+            "servicio": "worker-reportes",
+            "categoria": "timeout-no-configurado",
+            "severidad": "baja",
+            "minutos_caidos": 12,
+            "descripcion": "Job nocturno colgado contra el data warehouse."
+          }
+        ]
+      }
+    },
+    {
+      "orden": 3,
+      "agente": "analista",
+      "herramienta": "resumir_incidentes",
+      "resumen": "20 incidentes, 1225 minutos caídos en total; mediana 37.5 min; causa dominante bloqueo-event-loop (45.0%)",
+      "momento": "2026-10-08T19:48:14+00:00",
+      "datos": {
+        "total_incidentes": 20,
+        "total_minutos_caidos": 1225,
+        "metricas_minutos": {
+          "media": 61.25,
+          "mediana": 37.5,
+          "minimo": -5,
+          "maximo": 480,
+          "desvio_estandar": 101.68
+        },
+        "por_categoria": [
+          {
+            "categoria": "bloqueo-event-loop",
+            "cantidad": 9,
+            "porcentaje": 45.0,
+            "minutos_totales": 453
+          },
+          {
+            "categoria": "timeout-no-configurado",
+            "cantidad": 4,
+            "porcentaje": 20.0,
+            "minutos_totales": 152
+          },
+          {
+            "categoria": "cancelacion-mal-manejada",
+            "cantidad": 3,
+            "porcentaje": 15.0,
+            "minutos_totales": 560
+          },
+          {
+            "categoria": "tarea-huerfana",
+            "cantidad": 2,
+            "porcentaje": 10.0,
+            "minutos_totales": 30
+          },
+          {
+            "categoria": "fuga-de-tareas",
+            "cantidad": 2,
+            "porcentaje": 10.0,
+            "minutos_totales": 30
+          }
+        ],
+        "por_severidad": {
+          "media": 8,
+          "alta": 6,
+          "critica": 3,
+          "baja": 3
+        },
+        "por_servicio": {
+          "api-pedidos": 6,
+          "api-stock": 5,
+          "worker-emails": 3,
+          "worker-reportes": 3,
+          "api-pagos": 3
+        }
+      }
+    },
+    {
+      "orden": 4,
+      "agente": "analista",
+      "herramienta": "detectar_atipicos",
+      "resumen": "1 atípico(s); el mayor es INC-0214 con 480 min (12.8x la mediana)",
+      "momento": "2026-10-08T19:48:14+00:00",
+      "datos": {
+        "metodo": "IQR",
+        "umbral_iqr": 1.5,
+        "q1": 23.75,
+        "mediana": 37.5,
+        "q3": 56.25,
+        "iqr": 32.5,
+        "limite_superior": 105.0,
+        "cantidad_atipicos": 1,
+        "atipicos": [
+          {
+            "incidente_id": "INC-0214",
+            "fecha": "2026-06-19",
+            "servicio": "api-pagos",
+            "categoria": "cancelacion-mal-manejada",
+            "severidad": "critica",
+            "minutos_caidos": 480,
+            "veces_la_mediana": 12.8
+          }
+        ]
+      }
+    },
+    {
+      "orden": 5,
+      "agente": "analista",
+      "herramienta": "validar_registros",
+      "resumen": "19/20 registros válidos (95.0%), 1 con problemas",
+      "momento": "2026-10-08T19:48:14+00:00",
+      "datos": {
+        "registros_evaluados": 20,
+        "validos": 19,
+        "invalidos": 1,
+        "tasa_de_validez": 95.0,
+        "problemas": [
+          {
+            "incidente_id": "INC-0231",
+            "campo": "minutos_caidos",
+            "problema": "Input should be greater than or equal to 0",
+            "valor": -5
+          }
+        ]
+      }
+    }
+  ],
+  "conversacion": [
+    {
+      "autor": "HumanMessage",
+      "contenido": "Nuestros servicios asíncronos se vienen cayendo seguido. ¿Qué dice nuestra documentación técnica sobre las causas más probables, y qué muestran nuestros propios incidentes del último año? Quiero saber cuál es la causa dominante y si hay algún caso fuera de lo normal."
+    },
+    {
+      "autor": "supervisor",
+      "contenido": "[supervisor -> investigador] Faltan cuatro condiciones de la rúbrica porque ningún especialista ha trabajado aún. Al faltar 1 o 2 condiciones iniciales, corresponde derivar al investigador para recolectar la evidencia documental y los datos cuantitativos."
+    },
+    {
+      "autor": "investigador",
+      "contenido": "[investigador] He recuperado la documentación técnica sobre asyncio (que detalla problemas como el bloqueo del event loop por llamadas sincrónicas, la pérdida de tareas fire-and-forget, y la captura indebida de `CancelledError`) así como los 20 registros de incidentes de producción del último año en la bitácora. \n\nEn los datos de incidentes se destaca un registro inusual (INC-0231) donde el campo de minutos caídos figura con un valor negativo (`-5`), además de registrarse incidentes críticos de larga duración vinculados a cancelaciones mal manejadas y bloqueos del event loop. El material completo ya se encuentra disponible en el estado compartido para que el analista realice las métricas correspondientes."
+    },
+    {
+      "autor": "supervisor",
+      "contenido": "[supervisor -> analista] Ya se cuenta con evidencia documental y datos cuantitativos provistos por el investigador. Faltan el análisis estadístico y la validación de datos, por lo que corresponde enviar la tarea al analista."
+    },
+    {
+      "autor": "analista",
+      "contenido": "[analista] ### Informe de Análisis Técnico de Incidentes\n\n#### 1. Validación de Datos\nDe los 20 registros evaluados, **19 son válidos (95% de tasa de validez)**. Se detectó un registro inválido (`INC-0231` con un valor negativo de `-5` minutos caídos), lo que indica datos sucios en la base y reduce levemente la confianza absoluta en las métricas de tiempo, debiendo considerarse esta anomalía al interpretar los totales.\n\n#### 2. Frecuencia y Causa Dominante\n* **Total de incidentes analizados:** 20 (con 1,225 minutos caídos totales).\n* **Causa dominante:** El **bloqueo del event loop** es el problema más frecuente, representando el **45% de los incidentes** (9 de 20) y acumulando 453 minutos de caída.\n* Otras categorías relevantes incluyen *timeout no configurado* (20%) y *cancelación mal manejada* (15%).\n\n#### 3. Análisis de Valores Atípicos (Outliers)\nMediante el método del rango intercuartílico (IQR), se identificó un caso extremo: el incidente **INC-0214** en el servicio `api-pagos`, con una duración de **480 minutos** (severidad crítica), lo que equivale a 12.8 veces la mediana general. A pesar de ser un evento aislado dentro de la categoría *cancelación mal manejada*, su magnitud distorsiona de forma significativa las métricas globales de impacto.\n\n---\n\n### Interpretación de Resultados\n\nLos números revelan que la inestabilidad de nuestros servicios asíncronos no responde a fallas distribuidas de manera uniforme, sino a una vulnerabilidad sistémica concentrada en el bloqueo del event loop. Si bien este problema lidera ampliamente en frecuencia, el verdadero riesgo operativo radica en eventos críticos aislados —como fallas de cancelación mal manejadas— que acumulan un tiempo de inyección desproporcionado en comparación con la mediana general. En consecuencia, la estrategia de mitigación técnica debería priorizar tanto la prevención de bloqueos frecuentes como el endurecimiento de los mecanismos de recuperación ante fallos excepcionales."
+    },
+    {
+      "autor": "supervisor",
+      "contenido": "[supervisor -> validador] Las cuatro condiciones de la rúbrica están cumplidas, por lo que el trabajo debe pasar al validador para su revisión final y cierre."
+    },
+    {
+      "autor": "validador",
+      "contenido": "[validador] Aprobado: rúbrica completa."
+    },
+    {
+      "autor": "sintetizador",
+      "contenido": "La causa dominante de las caídas en los servicios asíncronos es el bloqueo del event loop, tal como advierte la documentación sobre llamadas sincrónicas pesadas (como `requests.get()`, compresión o lectura de archivos grandes). Sin embargo, se detectó que el registro INC-0231 tiene un valor de -5 minutos caídos (afectando la tasa de validez al 95.0% y restando confianza en las métricas).\n\nEn total se registraron 20 incidentes y 1225 minutos caídos, con una mediana de 37.5 minutos. La categoría `bloqueo-event-loop` representa el 45.0% de los casos (9 incidentes y 453 minutos totales). Fuera de lo normal, el caso atípico es el INC-0214 (`cancelacion-mal-manejada`), que provocó 480 minutos caídos (12.8 veces la mediana) debido a una cancelación silenciada que dejó transacciones a medio commitear.\n\nRecomendaciones según la documentación técnica consultada:\n- Evitar llamadas sincrónicas pesadas en las corrutinas; usar librerías asíncronas o delegar con `await asyncio.to_thread(func, *args)`.\n- Manejar correctamente la cancelación: nunca atrapar un `CancelledError` con un `except Exception` genérico sin volver a lanzarlo (`raise`), y asegurar la limpieza con `try/finally` utilizando `asyncio.shield` si la limpieza es asíncrona.\n- Definir timeouts para acotar llamadas externas utilizando `asyncio.timeout` (Python 3.11+) o `asyncio.wait_for`.\n- Evitar tareas *fire-and-forget* usando `TaskGroup` o conservando la referencia en un `set` con un `done_callback` para prevenir que el recolector de basura las destruya."
+    }
+  ],
+  "informe_final": "La causa dominante de las caídas en los servicios asíncronos es el bloqueo del event loop, tal como advierte la documentación sobre llamadas sincrónicas pesadas (como `requests.get()`, compresión o lectura de archivos grandes). Sin embargo, se detectó que el registro INC-0231 tiene un valor de -5 minutos caídos (afectando la tasa de validez al 95.0% y restando confianza en las métricas).\n\nEn total se registraron 20 incidentes y 1225 minutos caídos, con una mediana de 37.5 minutos. La categoría `bloqueo-event-loop` representa el 45.0% de los casos (9 incidentes y 453 minutos totales). Fuera de lo normal, el caso atípico es el INC-0214 (`cancelacion-mal-manejada`), que provocó 480 minutos caídos (12.8 veces la mediana) debido a una cancelación silenciada que dejó transacciones a medio commitear.\n\nRecomendaciones según la documentación técnica consultada:\n- Evitar llamadas sincrónicas pesadas en las corrutinas; usar librerías asíncronas o delegar con `await asyncio.to_thread(func, *args)`.\n- Manejar correctamente la cancelación: nunca atrapar un `CancelledError` con un `except Exception` genérico sin volver a lanzarlo (`raise`), y asegurar la limpieza con `try/finally` utilizando `asyncio.shield` si la limpieza es asíncrona.\n- Definir timeouts para acotar llamadas externas utilizando `asyncio.timeout` (Python 3.11+) o `asyncio.wait_for`.\n- Evitar tareas *fire-and-forget* usando `TaskGroup` o conservando la referencia en un `set` con un `done_callback` para prevenir que el recolector de basura las destruya."
+}

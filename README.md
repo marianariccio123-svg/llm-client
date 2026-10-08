@@ -16,6 +16,7 @@ con su README, sus dependencias y sus instrucciones de ejecución:
 | 3 | [`pre-entrega-3/`](pre-entrega-3/) | RAG local con LangChain + ChromaDB |
 | 4 | [`pre-entrega-4/`](pre-entrega-4/) | RAG escalable en Pinecone + recuperador híbrido + evaluación |
 | 5 | [`pre-entrega-5/`](pre-entrega-5/) | Agente ReAct con LangGraph, herramientas y memoria persistente |
+| 6 | [`pre-entrega-6/`](pre-entrega-6/) | Orquestador multi-agente: supervisor, especialistas y validación |
 
 Lo que sigue documenta la **Pre-entrega 1**.
 

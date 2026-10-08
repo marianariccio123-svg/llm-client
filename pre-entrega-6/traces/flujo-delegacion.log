@@ -1,0 +1,82 @@
+==============================================================================
+FLUJO DE DELEGACIÓN DEL ORQUESTADOR MULTI-AGENTE
+==============================================================================
+
+solicitud:       Nuestros servicios asíncronos se vienen cayendo seguido. ¿Qué dice nuestra documentación técnica sobre las causas más probables, y qué muestran nuestros propios incidentes del último año? Quiero saber cuál es la causa dominante y si hay algún caso fuera de lo normal.
+modelo:          gemini / gemini-flash-lite-latest
+tope supervisor: 6 pasos
+ejecutado:       2026-10-08T19:48:32+00:00
+
+------------------------------------------------------------------------------
+DELEGACIÓN (en orden)
+------------------------------------------------------------------------------
+1. [investigador / buscar_en_documentacion] 4 fragmentos de documentación (vía pinecone) sobre: El event loop de asyncio, Errores comunes en asyncio, Timeouts y cancelación
+2. [investigador / listar_incidentes] 20 incidentes entre 2025-10-06 y 2026-10-06, en 5 categorías
+3. [analista / resumir_incidentes] 20 incidentes, 1225 minutos caídos en total; mediana 37.5 min; causa dominante bloqueo-event-loop (45.0%)
+4. [analista / detectar_atipicos] 1 atípico(s); el mayor es INC-0214 con 480 min (12.8x la mediana)
+5. [analista / validar_registros] 19/20 registros válidos (95.0%), 1 con problemas
+
+------------------------------------------------------------------------------
+CONVERSACIÓN ENTRE AGENTES
+------------------------------------------------------------------------------
+
+[HumanMessage]
+Nuestros servicios asíncronos se vienen cayendo seguido. ¿Qué dice nuestra documentación técnica sobre las causas más probables, y qué muestran nuestros propios incidentes del último año? Quiero saber cuál es la causa dominante y si hay algún caso fuera de lo normal.
+
+[supervisor]
+[supervisor -> investigador] Faltan cuatro condiciones de la rúbrica porque ningún especialista ha trabajado aún. Al faltar 1 o 2 condiciones iniciales, corresponde derivar al investigador para recolectar la evidencia documental y los datos cuantitativos.
+
+[investigador]
+[investigador] He recuperado la documentación técnica sobre asyncio (que detalla problemas como el bloqueo del event loop por llamadas sincrónicas, la pérdida de tareas fire-and-forget, y la captura indebida de `CancelledError`) así como los 20 registros de incidentes de producción del último año en la bitácora. 
+
+En los datos de incidentes se destaca un registro inusual (INC-0231) donde el campo de minutos caídos figura con un valor negativo (`-5`), además de registrarse incidentes críticos de larga duración vinculados a cancelaciones mal manejadas y bloqueos del event loop. El material completo ya se encuentra disponible en el estado compartido para que el analista realice las métricas cor
+
+[supervisor]
+[supervisor -> analista] Ya se cuenta con evidencia documental y datos cuantitativos provistos por el investigador. Faltan el análisis estadístico y la validación de datos, por lo que corresponde enviar la tarea al analista.
+
+[analista]
+[analista] ### Informe de Análisis Técnico de Incidentes
+
+#### 1. Validación de Datos
+De los 20 registros evaluados, **19 son válidos (95% de tasa de validez)**. Se detectó un registro inválido (`INC-0231` con un valor negativo de `-5` minutos caídos), lo que indica datos sucios en la base y reduce levemente la confianza absoluta en las métricas de tiempo, debiendo considerarse esta anomalía al interpretar los totales.
+
+#### 2. Frecuencia y Causa Dominante
+* **Total de incidentes analizados:** 20 (con 1,225 minutos caídos totales).
+* **Causa dominante:** El **bloqueo del event loop** es el problema más frecuente, representando el **45% de los incidentes** (9 de 20) y acumulando 453 minutos d
+
+[supervisor]
+[supervisor -> validador] Las cuatro condiciones de la rúbrica están cumplidas, por lo que el trabajo debe pasar al validador para su revisión final y cierre.
+
+[validador]
+[validador] Aprobado: rúbrica completa.
+
+[sintetizador]
+La causa dominante de las caídas en los servicios asíncronos es el bloqueo del event loop, tal como advierte la documentación sobre llamadas sincrónicas pesadas (como `requests.get()`, compresión o lectura de archivos grandes). Sin embargo, se detectó que el registro INC-0231 tiene un valor de -5 minutos caídos (afectando la tasa de validez al 95.0% y restando confianza en las métricas).
+
+En total se registraron 20 incidentes y 1225 minutos caídos, con una mediana de 37.5 minutos. La categoría `bloqueo-event-loop` representa el 45.0% de los casos (9 incidentes y 453 minutos totales). Fuera de lo normal, el caso atípico es el INC-0214 (`cancelacion-mal-manejada`), que provocó 480 minutos caíd
+
+------------------------------------------------------------------------------
+RÚBRICA FINAL
+------------------------------------------------------------------------------
+{
+  "hay_evidencia_documental": true,
+  "hay_datos_cuantitativos": true,
+  "hay_analisis_estadistico": true,
+  "hay_validacion_de_datos": true
+}
+
+validación: Las cuatro condiciones de la rúbrica se cumplen.
+
+------------------------------------------------------------------------------
+INFORME FINAL
+------------------------------------------------------------------------------
+
+La causa dominante de las caídas en los servicios asíncronos es el bloqueo del event loop, tal como advierte la documentación sobre llamadas sincrónicas pesadas (como `requests.get()`, compresión o lectura de archivos grandes). Sin embargo, se detectó que el registro INC-0231 tiene un valor de -5 minutos caídos (afectando la tasa de validez al 95.0% y restando confianza en las métricas).
+
+En total se registraron 20 incidentes y 1225 minutos caídos, con una mediana de 37.5 minutos. La categoría `bloqueo-event-loop` representa el 45.0% de los casos (9 incidentes y 453 minutos totales). Fuera de lo normal, el caso atípico es el INC-0214 (`cancelacion-mal-manejada`), que provocó 480 minutos caídos (12.8 veces la mediana) debido a una cancelación silenciada que dejó transacciones a medio commitear.
+
+Recomendaciones según la documentación técnica consultada:
+- Evitar llamadas sincrónicas pesadas en las corrutinas; usar librerías asíncronas o delegar con `await asyncio.to_thread(func, *args)`.
+- Manejar correctamente la cancelación: nunca atrapar un `CancelledError` con un `except Exception` genérico sin volver a lanzarlo (`raise`), y asegurar la limpieza con `try/finally` utilizando `asyncio.shield` si la limpieza es asíncrona.
+- Definir timeouts para acotar llamadas externas utilizando `asyncio.timeout` (Python 3.11+) o `asyncio.wait_for`.
+- Evitar tareas *fire-and-forget* usando `TaskGroup` o conservando la referencia en un `set` con un `done_callback` para prevenir que el recolector de basura las destruya.

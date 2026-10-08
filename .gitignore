@@ -9,3 +9,6 @@ pre-entrega-4/bm25_corpus.jsonl
 
 # Pre-entrega 5: bases generadas (`python seed_db.py` las recrea)
 pre-entrega-5/data/
+
+# Pre-entrega 6: bases generadas (`python seed_db.py` las recrea)
+pre-entrega-6/data/

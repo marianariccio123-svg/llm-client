@@ -1,0 +1,70 @@
+==============================================================================
+CICLO DE REFINAMIENTO: EL VALIDADOR RECHAZA Y DEVUELVE
+==============================================================================
+
+ATENCIÓN: esta traza es DETERMINISTA Y SIMULADA. El modelo está
+reemplazado por el LLM guionado de los tests (tests/stub_llm.py), para
+forzar un supervisor que declara la tarea completa cuando no lo está.
+Con el modelo real esto casi no pasa, porque el supervisor recibe la
+rúbrica verificada contra el estado y la sigue — ver
+traces/flujo-delegacion.log para la corrida real.
+
+tope del supervisor: 6 pasos
+generada:            2026-10-08T19:55:42+00:00
+
+------------------------------------------------------------------------------
+
+SUPERVISOR -> investigador
+    "Arranco pidiendo los incidentes."
+    rúbrica verificada: falta evidencia documental, datos cuantitativos, análisis estadístico, validación de datos
+
+INVESTIGADOR aportó 1 hallazgo(s):
+    [listar_incidentes] 20 incidentes entre 2025-10-06 y 2026-10-06, en 5 categorías
+
+SUPERVISOR -> validador
+    "Ya tengo los incidentes, me parece que con esto alcanza. Cierro."
+    rúbrica verificada: falta evidencia documental, análisis estadístico, validación de datos
+
+VALIDADOR -> RECHAZADO  <-- acá se cierra el ciclo de refinamiento
+    Rechazado: falta evidencia documental, análisis estadístico, validación de datos.
+
+SUPERVISOR -> investigador
+    "El validador me marcó que falta la evidencia documental. La busco."
+    rúbrica verificada: falta evidencia documental, análisis estadístico, validación de datos
+
+INVESTIGADOR aportó 1 hallazgo(s):
+    [buscar_en_documentacion] 4 fragmentos de documentación (vía bm25-local) sobre: El event loop de asyncio, Errores comunes en asyncio, Rendimiento y depuración
+
+SUPERVISOR -> analista
+    "Ahora sí tengo documentación y datos; falta el análisis."
+    rúbrica verificada: falta análisis estadístico, validación de datos
+
+ANALISTA aportó 3 hallazgo(s):
+    [resumir_incidentes] 20 incidentes, 1225 minutos caídos en total; mediana 37.5 min; causa dominante bloqueo-event-loop (45.0%)
+    [detectar_atipicos] 1 atípico(s); el mayor es INC-0214 con 480 min (12.8x la mediana)
+    [validar_registros] 19/20 registros válidos (95.0%), 1 con problemas
+
+SUPERVISOR -> validador
+    "Las cuatro condiciones están cumplidas de verdad."
+    rúbrica verificada: completa
+
+VALIDADOR -> APROBADO
+    Las cuatro condiciones de la rúbrica se cumplen.
+
+SINTETIZADOR -> informe final redactado
+
+------------------------------------------------------------------------------
+QUÉ MOSTRÓ ESTA TRAZA
+------------------------------------------------------------------------------
+
+1. El supervisor derivó al validador declarando la rúbrica completa,
+   cuando solo se había ejecutado `listar_incidentes`.
+2. El validador NO le creyó: recorrió los hallazgos del estado, vio que
+   faltaba la evidencia documental y el análisis, y devolvió el control
+   al supervisor en lugar de dejar pasar un informe a medias.
+3. El supervisor corrigió el rumbo y completó el trabajo.
+4. Recién con las cuatro condiciones cumplidas de verdad, el validador
+   aprobó y el flujo llegó al sintetizador.
+
+pasos de supervisión: 5 (tope: 6)
+vueltas al validador: 2

@@ -1,0 +1,28 @@
+# --- LangGraph: el grafo, los agentes prebuilt y la persistencia ---
+langgraph                     # StateGraph, create_react_agent, InjectedState
+langgraph-checkpoint-sqlite   # AsyncSqliteSaver
+aiosqlite                     # driver async: lo usan el saver y las herramientas
+
+# --- LangChain ---
+langchain-core                # @tool, los tipos de mensaje
+langchain-community           # BM25Retriever (respaldo local de la búsqueda documental)
+rank_bm25
+
+# --- Vector DB de la Pre-entrega 4 ---
+pinecone                      # SDK nativo; ver la nota en pre-entrega-4/README.md
+
+# --- Proveedores de LLM ---
+langchain-google-genai
+langchain-openai
+langchain-anthropic
+
+# --- Utilidades ---
+pydantic
+python-dotenv
+
+# --- Tests y notebook (desarrollo) ---
+pytest
+pytest-asyncio
+nbformat                      # solo para build_notebook.py
+nbclient
+ipykernel
