@@ -1,0 +1,75 @@
+{
+  "timestamp": "2026-10-08T23:11:16+00:00",
+  "url": "http://127.0.0.1:8077",
+  "resumen": {
+    "peticiones": 5,
+    "completadas": 5,
+    "fallidas": 0,
+    "pausadas_en_hitl": 5,
+    "segundos_de_la_corrida": 150.78,
+    "latencia_extremo_a_extremo": {
+      "p50": 138.17,
+      "p95": 149.13,
+      "min": 94.8,
+      "max": 150.78,
+      "media": 125.08
+    },
+    "ms_hasta_el_202": {
+      "p50": 519.5,
+      "p95": 538.14,
+      "max": 538.3
+    }
+  },
+  "mediciones": [
+    {
+      "numero": 1,
+      "solicitud": "Nuestros servicios asincronicos se vienen cayendo seguido. Que dice la...",
+      "estado": "COMPLETADO",
+      "job_id": "6390a58d346b4747",
+      "ms_encolado": 198.7,
+      "segundos_total": 99.11,
+      "paso_por_hitl": true,
+      "error": null
+    },
+    {
+      "numero": 2,
+      "solicitud": "Cual es la causa dominante de nuestras caidas de produccion y que reco...",
+      "estado": "COMPLETADO",
+      "job_id": "2d7035de0f4d46df",
+      "ms_encolado": 519.5,
+      "segundos_total": 142.55,
+      "paso_por_hitl": true,
+      "error": null
+    },
+    {
+      "numero": 3,
+      "solicitud": "Hay algun incidente fuera de lo normal en la bitacora? Analizalo y dec...",
+      "estado": "COMPLETADO",
+      "job_id": "5abb68d8c8064755",
+      "ms_encolado": 538.3,
+      "segundos_total": 150.78,
+      "paso_por_hitl": true,
+      "error": null
+    },
+    {
+      "numero": 4,
+      "solicitud": "Que servicio es el mas problematico segun nuestros incidentes y cuanto...",
+      "estado": "COMPLETADO",
+      "job_id": "5568ef616e314157",
+      "ms_encolado": 491.6,
+      "segundos_total": 94.8,
+      "paso_por_hitl": true,
+      "error": null
+    },
+    {
+      "numero": 5,
+      "solicitud": "Cuantos minutos de caida acumulamos y que proporcion corresponde a blo...",
+      "estado": "COMPLETADO",
+      "job_id": "e388d989e09c490f",
+      "ms_encolado": 537.5,
+      "segundos_total": 138.17,
+      "paso_por_hitl": true,
+      "error": null
+    }
+  ]
+}

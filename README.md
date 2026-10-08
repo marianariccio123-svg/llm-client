@@ -17,6 +17,7 @@ con su README, sus dependencias y sus instrucciones de ejecución:
 | 4 | [`pre-entrega-4/`](pre-entrega-4/) | RAG escalable en Pinecone + recuperador híbrido + evaluación |
 | 5 | [`pre-entrega-5/`](pre-entrega-5/) | Agente ReAct con LangGraph, herramientas y memoria persistente |
 | 6 | [`pre-entrega-6/`](pre-entrega-6/) | Orquestador multi-agente: supervisor, especialistas y validación |
+| 7 | [`pre-entrega-7/`](pre-entrega-7/) | API FastAPI asíncrona: Redis, observabilidad y human-in-the-loop |
 
 Lo que sigue documenta la **Pre-entrega 1**.
 

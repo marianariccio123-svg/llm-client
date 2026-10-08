@@ -1,0 +1,55 @@
+# docker-compose.yml
+#
+# Levanta Redis y la API juntos. Es opcional: la entrega se desarrolló contra
+# una base de Redis Cloud, porque la máquina de desarrollo no tenía Docker.
+#
+# La imagen es `redis/redis-stack-server` y no `redis` a secas, y eso no es
+# negociable: el checkpointer de LangGraph crea índices de RediSearch, y la
+# imagen base de Redis no trae ese módulo. Con `redis:7-alpine` la API arranca,
+# acepta trabajos y todos fallan en el primer checkpoint.
+#
+# Uso:
+#   docker compose up -d redis     # solo Redis, la API se corre a mano
+#   docker compose up --build      # todo junto
+#   docker compose down -v         # y borra los datos
+
+services:
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: auditoria-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - datos_redis:/data
+    healthcheck:
+      # La API depende de esto: sin el healthcheck, `depends_on` la arrancaría
+      # mientras Redis todavía está inicializando y el primer PING fallaría.
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ..
+      dockerfile: pre-entrega-7/Dockerfile
+    container_name: auditoria-api
+    ports:
+      - "8000:8000"
+    environment:
+      # Dentro de la red de compose, Redis se resuelve por el nombre del
+      # servicio. Pisa lo que venga del .env, que apunta a Redis Cloud.
+      REDIS_URL: redis://redis:6379
+    env_file:
+      # Las credenciales viven en el .env de la raíz del repo y no se copian
+      # a la imagen: se inyectan en tiempo de ejecución.
+      - ../.env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  datos_redis:

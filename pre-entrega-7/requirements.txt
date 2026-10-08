@@ -1,0 +1,36 @@
+# --- API ---
+fastapi
+uvicorn[standard]
+httpx                          # cliente async: lo usa la prueba de carga
+
+# --- Estado y checkpoints ---
+redis                          # cliente async para el estado de los jobs
+langgraph-checkpoint-redis     # AsyncRedisSaver (requiere Redis con RediSearch)
+
+# --- Orquestador (se reutiliza el del módulo 6) ---
+langgraph
+langchain-core
+langchain-community            # BM25Retriever, respaldo de la búsqueda documental
+rank_bm25
+pinecone                       # vector DB del módulo 4
+
+# --- Proveedores de LLM ---
+langchain-google-genai
+langchain-openai
+langchain-anthropic
+
+# --- Observabilidad ---
+langsmith
+# Alternativa a LangSmith. El paquete del servidor (`arize-phoenix`) no compila
+# en Python 3.14, pero el cliente sí: sirve apuntando a un Phoenix hosteado.
+# arize-phoenix-otel
+# openinference-instrumentation-langchain
+
+# --- Utilidades ---
+pydantic
+python-dotenv
+
+# --- Tests (desarrollo) ---
+pytest
+pytest-asyncio
+fakeredis                      # Redis en memoria: los tests no necesitan uno real
