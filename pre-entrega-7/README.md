@@ -433,18 +433,47 @@ Lo que importa de esta tabla: **el 202 llegó en medio segundo mientras cinco
 auditorías corrían en paralelo**. Esa es la diferencia entre encolar y ejecutar
 dentro del request.
 
-Del dashboard de LangSmith, para la misma corrida:
+Del dashboard de LangSmith:
 
 | Métrica | Valor |
 |---|---|
-| Costo por ejecución | **~$0.0021** |
-| Tokens por ejecución | 5.400 – 6.200 |
+| Costo por ejecución | **$0.001953 – $0.002192** (media ~$0.0021) |
+| Tokens por ejecución | 5.436 – 6.169 |
 | Modelo | `gemini-3.1-flash-lite` |
 | Spans con costo atribuido | 13/13 |
+| Latencia P50 | 28,64 s |
+| **Latencia P95** | **84,46 s** |
+| Latencia P99 | 115,60 s |
 
-Los dos p95 miden cosas distintas y conviene leerlos juntos: el del dashboard
-es la **ejecución del grafo**, el del script es **de punta a punta** e incluye
-la espera en cola. Con 3 workers y 5 peticiones, dos esperan turno.
+#### De dónde sale el P95
+
+El panel **Trace Latency** de LangSmith grafica los percentiles de latencia,
+pero en su versión actual dibuja **P50 y P99**, no P95
+([`04-latencia-percentiles.png`](screenshots/04-latencia-percentiles.png)).
+
+El P95 se calculó por interpolación lineal sobre las **mismas 33 trazas que
+LangSmith tiene registradas**, leídas con su propia API
+(`client.list_runs`). No es una medición aparte: es el mismo conjunto de datos
+del gráfico, con otro percentil. La verificación es que el P50 calculado
+—28,64 s— coincide exactamente con el que muestra el panel.
+
+El cálculo se reproduce con:
+
+```bash
+python scripts/percentiles_langsmith.py
+```
+
+#### Los dos p95 miden cosas distintas
+
+| | qué mide | valor |
+|---|---|---|
+| **P95 de LangSmith** | la ejecución del grafo, desde que un worker toma el trabajo | 84,46 s |
+| **P95 del script** | de punta a punta, incluyendo la espera en cola | 149,13 s |
+
+Conviene leerlos juntos: la diferencia entre los dos **es** el tiempo de cola.
+Con 3 workers y 5 peticiones, dos esperan turno, y esos ~65 segundos de
+diferencia son exactamente esa espera. Si los dos números fueran parecidos, la
+cola no estaría siendo un cuello de botella.
 
 ---
 

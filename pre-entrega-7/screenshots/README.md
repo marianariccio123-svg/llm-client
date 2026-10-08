@@ -80,20 +80,41 @@ referencia fue de **~$0.0021 por ejecución**, con unos 5.400 a 6.200 tokens.
 
 ---
 
-### 4. `04-latencia-p95.png`
+### 4. `04-latencia-percentiles.png`
 
-**Dónde**: en el proyecto, pestaña **Monitor** (o el panel de métricas). Buscá
-el gráfico de **Latency** y seleccioná **P95**. Ajustá el rango de tiempo a la
-última hora para que se vea el pico de la prueba de carga.
+**Dónde**: botón **Dashboard**, arriba a la derecha del proyecto. Panel
+**Trace Latency — Trace latency percentiles over time**.
 
-**Qué tiene que verse**: el percentil 95 de latencia de las ejecuciones.
+**Qué se ve**: los percentiles de latencia de las trazas. En su versión actual
+LangSmith grafica **P50 y P99**; el selector no ofrece P95.
 
-> **Por qué este número no coincide con el del script**: el p95 de LangSmith
-> mide la **ejecución del grafo**, desde que un worker toma el trabajo. El p95
-> del script mide **de punta a punta**, e incluye la espera en la cola. Con 3
-> workers y 5 peticiones, dos esperan turno, así que el del script es bastante
-> mayor. Los dos son correctos y miden cosas distintas: compararlos es lo que
-> dice si la cola está siendo el cuello de botella.
+El P95 se calculó entonces sobre las **mismas trazas que LangSmith tiene
+registradas**, leídas con su propia API, y está en el README principal:
+
+| Percentil | Valor |
+|---|---|
+| P50 | 28,64 s (coincide con el panel) |
+| **P95** | **84,46 s** |
+| P99 | 115,60 s |
+
+Se reproduce con `python scripts/percentiles_langsmith.py`. Que el P50
+calculado coincida con el del gráfico es la verificación de que es el mismo
+conjunto de datos.
+
+---
+
+### 5. `05-hitl-aprobacion.png`
+
+**Dónde**: cualquier traza de **reanudación** (las cortas, de 3-5 s, que
+arrancan en `compuerta_hitl` en vez de `supervisor`).
+
+**Qué se ve**: en el panel derecho, `comando → resume → aprobado: true` con
+quién aprobó; en el árbol, `compuerta_hitl` seguido de `ejecutar_accion`. Es
+el momento exacto en que el grafo se retoma tras la aprobación humana y recién
+ahí ejecuta la acción con efectos secundarios.
+
+No la pide la consigna explícitamente, pero es la evidencia visual del
+requisito de HITL.
 
 ---
 
